@@ -181,6 +181,7 @@ def analyzePredictions(y_true, y_pred, to_predict_generator):
     f1 = f1_score(y_true, y_pred)
 
     print("F1 Score:", f1)
+    print(classification_report(y_true, y_pred, zero_division=1))
     #
     # The code below outputs the converted images so we can verify what is being compared.
     #
