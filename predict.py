@@ -8,6 +8,7 @@ import pandas as pd
 from sklearn.metrics import precision_score, recall_score, mean_squared_error
 from sklearn.metrics import roc_curve, precision_recall_curve, auc, precision_score, recall_score
 from tensorflow.keras.models import load_model
+from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score, roc_auc_score, roc_curve
 
 from sklearn.metrics import precision_score, recall_score, confusion_matrix, classification_report
 from sklearn.feature_extraction.text import CountVectorizer
@@ -40,12 +41,14 @@ import tensorflow as tf
 from sklearn.metrics import f1_score
 
 # Set seeds for NumPy and TensorFlow random number generators
-np.random.seed(256)
-tf.random.set_seed(256)
+# np.random.seed(256)
+# tf.random.set_seed(256)
 
 #  true image dimensions are (162, 193) `rows` is not in [96, 128, 160, 192, 224]. Weights for input shape (224, 224)
-IMAGE_WIDTH = 224
-IMAGE_HEIGHT = 224
+IMAGE_WIDTH = 100
+IMAGE_HEIGHT = 100
+
+BATCH_SIZE = 32
 
 # Make predictions or perform other operations with the loaded model
 
@@ -60,60 +63,27 @@ def grayscale_conversion(img):
     return grayscale_img
 
 
-def getImageDataGenerator():
-    return ImageDataGenerator(
-        samplewise_center=False,
-        featurewise_std_normalization=False,
-        samplewise_std_normalization=False,
-        zca_epsilon=1e-06,
-        rotation_range=0,
-        width_shift_range=0.0,
-        height_shift_range=0.0,
-        brightness_range=None,
-        shear_range=0.0,
-        zoom_range=0.0,
-        channel_shift_range=0.0,
-        fill_mode='nearest',
-        cval=0.0,
-        horizontal_flip=False,
-        vertical_flip=False,
-        # rescale=None,
-        rescale=1./255,
-        data_format=None,
-        validation_split=0.0,
-        interpolation_order=1,
-        dtype=None,
-        preprocessing_function=grayscale_conversion  # Apply grayscale conversion
-    )
-
-
 def getPredictions(model, threshold, file_path):
 
-    prediction_datagen = getImageDataGenerator()
+    test_data_generator = ImageDataGenerator(rescale=1./255,
+                                             preprocessing_function=grayscale_conversion  # Apply grayscale conversion
+                                             )
+    test_generator = test_data_generator.flow_from_directory(
+        ".\\data\\testing_images",
+        target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
+        batch_size=BATCH_SIZE,
+        class_mode='binary',
+        shuffle=False  # Set shuffle to False for test data
+    )
 
-    to_predict_generator = prediction_datagen.flow_from_directory(file_path,
+    y_true = test_generator.classes
 
-                                                                  target_size=(
-                                                                      IMAGE_WIDTH, IMAGE_HEIGHT),
-                                                                  batch_size=32,
-                                                                  class_mode='categorical'
-                                                                  )
-    y_true = to_predict_generator.classes
+    y_proba = model.predict(test_generator)
+    y_pred = (y_proba > 0.5).astype(int)
 
-    # filepaths = to_predict_generator.filepaths
+    class_indices = test_generator.class_indices
 
-    # Get the predicted probabilities for each image
-    y_pred_probs = model.predict(to_predict_generator)
-
-    # Convert probabilities to binary predictions (0 or 1) based on a threshold
-    # y_pred = np.where(y_pred_probs > 0.5, 1, 0)
-
-    class_indices = to_predict_generator.class_indices
-    # Extract elements where the second item is greater than the first
-    y_pred = [1 if item[class_indices['1']] >
-              threshold else 0 for item in y_pred_probs]
-
-    return y_true, y_pred, to_predict_generator
+    return y_true, y_pred, test_generator
 
 
 #
@@ -125,8 +95,13 @@ def visualize_predictions_confusionMatrix(title, true_labels, predicted_labels):
     # Plot confusion matrix
     cm = confusion_matrix(true_labels, predicted_labels)
     plt.figure(figsize=(8, 6))
+
+    # locs, labels = plt.yticks()
+    # plt.yticks([0, 1], ["happy", "neutral"])
+
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=[
-                '0', '1'])
+                'happy', 'neutral'], yticklabels=[
+                'happy', 'neutral'])
     plt.xlabel("Predicted Label")
     plt.ylabel("True Label")
     plt.title(title + ": Confusion Matrix")
@@ -172,42 +147,61 @@ def visualize_predictions_PrecisionRecall(title, true_labels, predicted_labels):
     plt.show()
 
 
-def analyzePredictions(y_true, y_pred, to_predict_generator):
+def analyzePredictions(y_true, y_pred, test_generator):
 
     visualize_predictions_confusionMatrix("test data", y_true, y_pred)
     visualize_predictions_ROC("test data", y_true, y_pred)
     visualize_predictions_PrecisionRecall("test data", y_true, y_pred)
-# Assuming y_true and y_pred are your true labels and predicted labels respectively
-    f1 = f1_score(y_true, y_pred)
+    # Assuming y_true and y_pred are your true labels and predicted labels respectively
 
-    print("F1 Score:", f1)
     print(classification_report(y_true, y_pred, zero_division=1))
-    #
-    # The code below outputs the converted images so we can verify what is being compared.
-    #
 
-    # output_folder_happy = ".\\data\\test_results\\1\\"
-    # output_folder_neutral = ".\\data\\test_results\\0\\"
-    # output_file_path = ".\\data\\test_results\\"
+    # Calculate performance metrics
+    fpr, tpr, thresholds = roc_curve(test_generator.classes, y_pred)
+    precision = precision_score(test_generator.classes, y_pred)
+    recall = recall_score(test_generator.classes, y_pred)
+    f1 = f1_score(test_generator.classes, y_pred)
+    roc_auc = roc_auc_score(test_generator.classes, y_pred)
+    conf_matrix = confusion_matrix(test_generator.classes, y_pred)
 
-    # # Ensure that the output folder exists
-    # os.makedirs(output_folder_happy, exist_ok=True)
-    # os.makedirs(output_folder_neutral, exist_ok=True)
+    # Print performance metrics
+    print("False Positive Rate:", fpr)
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", f1)
+    print("ROC AUC Score:", roc_auc)
+    print("Confusion Matrix:")
+    print(conf_matrix)
 
-    # # Iterate over the generator to process and save each image
-    # for i, (images, _) in enumerate(to_predict_generator):
-    #     for j, image in enumerate(images):
-    #         # Generate a file name for the image
-    #         filename = f"image_{i * to_predict_generator.batch_size + j}.jpg"
 
-    #         subfolder = y_pred[j]
-    #         # Save the image to the output directory
-    #         image_path = os.path.join(output_file_path, filename)
-    #         # Convert back to uint8 before saving
-    #         Image.fromarray((image * 255).astype(np.uint8)).save(image_path)
-    #     # Stop iteration after processing all batches
-    #     if i + 1 == len(to_predict_generator):
-    #         break
+def savePredictions(to_predict_generator):
+    output_folder_happy = ".\\data\\test_results\\happy\\"
+    output_folder_neutral = ".\\data\\test_results\\neutral\\"
+    output_file_path = ".\\data\\test_results\\"
+
+    # Ensure that the output folder exists
+    os.makedirs(output_folder_happy, exist_ok=True)
+    os.makedirs(output_folder_neutral, exist_ok=True)
+
+    # Iterate over the generator to process and save each image
+    for i, (images, _) in enumerate(to_predict_generator):
+        for j, image in enumerate(images):
+            # Generate a file name for the image
+            filename = f"image_{i * to_predict_generator.batch_size + j}.jpg"
+
+            class_indices = to_predict_generator.class_indices
+            subfolder = "neutral"
+            if class_indices["happy"] == y_pred[j]:
+                subfolder = "happy"
+            # subfolder = y_pred[j]
+            # Save the image to the output directory
+            image_path = os.path.join(
+                output_file_path+subfolder+"\\", filename)
+            # Convert back to uint8 before saving
+            Image.fromarray((image * 255).astype(np.uint8)).save(image_path)
+        # Stop iteration after processing all batches
+        if i + 1 == len(to_predict_generator):
+            break
 
     # print("All images processed and saved to:", output_file_path)
 
@@ -229,3 +223,5 @@ if __name__ == "__main__":
     y_true, y_pred, to_predict_generator = getPredictions(
         model, 0.6, file_path)
     analyzePredictions(y_true, y_pred, to_predict_generator)
+
+    savePredictions(to_predict_generator)

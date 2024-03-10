@@ -50,9 +50,9 @@ if __name__ == "__main__":
 
         fullPathImage = m_rootFolder + imageFile
 
-        classificationFolder = "\\0\\"
+        classificationFolder = "\\neutral\\"
         if (emotion == "happy"):
-            classificationFolder = "\\1\\"
+            classificationFolder = "\\happy\\"
 
         copy_file_to_folder(
             fullPathImage, m_outputFolder + classificationFolder)
