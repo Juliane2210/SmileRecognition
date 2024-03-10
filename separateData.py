@@ -1,4 +1,4 @@
-
+#!\\usr\\bin\\env python
 
 import shutil
 import os
@@ -46,6 +46,7 @@ if __name__ == "__main__":
     # Iterate through rows
     for index, row in data.iterrows():
         imageFile = row["FILENAME"]
+        imageFile = imageFile.split(".")[0]+".jpg"
         emotion = row["EMOTION"]
 
         fullPathImage = m_rootFolder + imageFile
