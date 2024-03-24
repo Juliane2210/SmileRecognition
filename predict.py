@@ -1,41 +1,24 @@
 
 
 import os
-import cv2
-import shutil
 import sys
-import pandas as pd
-from sklearn.metrics import precision_score, recall_score, mean_squared_error
 from sklearn.metrics import roc_curve, precision_recall_curve, auc, precision_score, recall_score
 from tensorflow.keras.models import load_model
 from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score, roc_auc_score, roc_curve
 
 from sklearn.metrics import precision_score, recall_score, confusion_matrix, classification_report
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
-from sentence_transformers import SentenceTransformer
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer 
 import numpy as np
 from tensorflow.keras.preprocessing.image import img_to_array, load_img
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.applications import VGG16
-from tensorflow.keras.preprocessing import image
-from skimage.feature import hog
-from skimage import exposure
-from skimage.feature import local_binary_pattern
 from PIL import Image
 import seaborn as sns
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
 from skimage.color import rgb2gray
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
 import numpy as np
 import tensorflow as tf
 from sklearn.metrics import f1_score
@@ -69,7 +52,7 @@ def getPredictions(model, threshold, file_path):
                                              preprocessing_function=grayscale_conversion  # Apply grayscale conversion
                                              )
     test_generator = test_data_generator.flow_from_directory(
-        ".\\data\\testing_images",
+        "./data/testing_images",
         target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
         batch_size=BATCH_SIZE,
         class_mode='binary',
@@ -211,14 +194,14 @@ if __name__ == "__main__":
     # Check if the file path argument is provided
     if len(sys.argv) != 2:
         print("Usage: python predict.py <file_path>")
-        file_path = ".\\data\\testing_images"
+        file_path = ".\\data/testing_images"
         # sys.exit(1)
     else:
         # Extract file path from command-line arguments
         file_path = sys.argv[1]
 
     # Load the model
-    model = load_model(".\\smile_detection_model.keras")
+    model = load_model(".\\champion_model.keras")
 
     y_true, y_pred, to_predict_generator = getPredictions(
         model, 0.6, file_path)
