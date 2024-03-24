@@ -170,16 +170,26 @@ def savePredictions(to_predict_generator):
     for i, (images, _) in enumerate(to_predict_generator):
         for j, image in enumerate(images):
             # Generate a file name for the image
-            filename = f"image_{i * to_predict_generator.batch_size + j}.jpg"
+
+            index = i * to_predict_generator.batch_size + j
+            original_file_path = to_predict_generator.filepaths[index]
+            # Split the file path into directory and filename with extension
+            directory, filename_with_extension = os.path.split(
+                original_file_path)
+            # Split the filename with extension into filename and extension
+            originalFile, file_extension = os.path.splitext(
+                filename_with_extension)
+
+            filename = f"image_{originalFile}.jpg"
 
             class_indices = to_predict_generator.class_indices
             subfolder = "neutral"
-            if class_indices["happy"] == y_pred[j]:
+            if class_indices["happy"] == y_pred[index]:
                 subfolder = "happy"
             # subfolder = y_pred[j]
             # Save the image to the output directory
             image_path = os.path.join(
-                output_file_path+subfolder+"\\", filename)
+                output_file_path + subfolder + "\\", filename)
             # Convert back to uint8 before saving
             Image.fromarray((image * 255).astype(np.uint8)).save(image_path)
         # Stop iteration after processing all batches
