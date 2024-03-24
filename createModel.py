@@ -3,7 +3,8 @@
 #  Assignment #2
 #
 # Based on https://github.com/cocoxu/SemEval-PIT2015
-#
+# Data located at https://drive.google.com/file/d/1ka0c6LqDLwovePRRzeuJFLx7AcXcz8Ji/view?usp=drive_link
+# Please download and point the path at the data prior to running
 #
 import os
 import cv2
