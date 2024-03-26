@@ -1,5 +1,6 @@
 #
 #  Juliane Bruck  - 8297746
+#  Qiyun Feng
 #  Assignment #2
 #
 # Based on https://github.com/cocoxu/SemEval-PIT2015
