@@ -3,6 +3,7 @@
 # Juliane
 # Qiyun
 #
+# python predict.py ".\\smile_detection_model.keras" ".\\data\testing_images"
 
 import os
 import sys
@@ -35,7 +36,7 @@ from sklearn.metrics import f1_score
 IMAGE_WIDTH = 100
 IMAGE_HEIGHT = 100
 
-BATCH_SIZE = 32
+BATCH_SIZE = 128
 
 # Make predictions or perform other operations with the loaded model
 
@@ -50,13 +51,13 @@ def grayscale_conversion(img):
     return grayscale_img
 
 
-def getPredictions(model, threshold, file_path):
+def getPredictions(model, threshold, test_data_path):
 
     test_data_generator = ImageDataGenerator(rescale=1./255,
                                              preprocessing_function=grayscale_conversion  # Apply grayscale conversion
                                              )
     test_generator = test_data_generator.flow_from_directory(
-        "./data/testing_images",
+        test_data_path,
         target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
         batch_size=BATCH_SIZE,
         class_mode='binary',
@@ -66,8 +67,11 @@ def getPredictions(model, threshold, file_path):
     y_true = test_generator.classes
 
     y_proba = model.predict(test_generator)
-    y_pred = (y_proba > 0.5).astype(int)
+    y_pred = (y_proba > threshold).astype(int)
 
+    #
+    # happy is at the 0 index
+    #
     class_indices = test_generator.class_indices
 
     return y_true, y_pred, test_generator
@@ -77,7 +81,6 @@ def getPredictions(model, threshold, file_path):
 # Visualizations
 # Helper functions that will be called to perform visualizations of model evaluation scores
 #
-
 def visualize_predictions_confusionMatrix(title, true_labels, predicted_labels):
     # Plot confusion matrix
     cm = confusion_matrix(true_labels, predicted_labels)
@@ -199,21 +202,32 @@ def savePredictions(to_predict_generator):
 
 
 if __name__ == "__main__":
+    # Check if the correct number of command-line arguments are provided
+    if len(sys.argv) != 3:
+        print("Usage: python script.py <model_path> <test_data_path>")
+        print("Using defaults")
+        # Get the paths from command-line arguments
+        model_path = ".\\smile_detection_model.keras"
+        test_data_path = ".\\data\\testing_images"
 
-    # Check if the file path argument is provided
-    if len(sys.argv) != 2:
-        print("Usage: python predict.py <file_path>")
-        file_path = ".\\data\\testing_images"
-        # sys.exit(1)
     else:
-        # Extract file path from command-line arguments
-        file_path = sys.argv[1]
+        # Get the paths from command-line arguments
+        model_path = sys.argv[1]
+        test_data_path = sys.argv[2]
 
     # Load the model
-    model = load_model(".\\champion_model_drop_0_05.keras")
+    print("Loading model from:", model_path)
+    model = load_model(model_path)
 
+    # Make predictions
+    print("Making predictions...")
     y_true, y_pred, to_predict_generator = getPredictions(
-        model, 0.6, file_path)
+        model, 0.5, test_data_path)
     analyzePredictions(y_true, y_pred, to_predict_generator)
 
+    # Save predictions
+    output_path = "predictions.txt"
+    print("Saving predictions to:", output_path)
     savePredictions(to_predict_generator)
+
+    print("Predictions saved successfully.")

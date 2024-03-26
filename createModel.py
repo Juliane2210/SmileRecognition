@@ -1,6 +1,6 @@
 #
 #  Juliane Bruck  - 8297746
-#  Qiyun Feng
+# Qiyun Feng
 #  Assignment #2
 #
 # Based on https://github.com/cocoxu/SemEval-PIT2015
@@ -54,7 +54,7 @@ tf.random.set_seed(42)
 # Define constants
 IMAGE_WIDTH = 100
 IMAGE_HEIGHT = 100
-BATCH_SIZE = 32
+BATCH_SIZE = 128
 
 
 def grayscale_conversion(img):
