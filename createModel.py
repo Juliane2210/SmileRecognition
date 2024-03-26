@@ -3,7 +3,8 @@
 #  Assignment #2
 #
 # Based on https://github.com/cocoxu/SemEval-PIT2015
-#
+# Data located at https://drive.google.com/file/d/1ka0c6LqDLwovePRRzeuJFLx7AcXcz8Ji/view?usp=drive_link
+# Please download and point the path at the data prior to running
 #
 import os
 import cv2
@@ -37,6 +38,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
 from skimage.color import rgb2gray
+from skimage.transform import resize
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
 import numpy as np
@@ -56,8 +58,8 @@ BATCH_SIZE = 32
 
 def grayscale_conversion(img):
     # Convert the image to grayscale
-    grayscale_img = rgb2gray(img)
     # Add a color channel axis to make it compatible with the original shape
+    grayscale_img = resize(img, (IMAGE_WIDTH, IMAGE_HEIGHT))
     grayscale_img = np.expand_dims(grayscale_img, axis=-1)
     return grayscale_img
 
@@ -74,53 +76,65 @@ def grayscale_conversion(img):
 def createModel():
     # Set up data generators for training, validation, and testing
     train_data_generator = ImageDataGenerator(rescale=1./255,
-                                              preprocessing_function=grayscale_conversion  # Apply grayscale conversion
+                                            #   preprocessing_function=grayscale_conversion,  # Apply grayscale conversion
+                                              validation_split=0.2,
                                               )
     train_generator = train_data_generator.flow_from_directory(
-        ".\\data\\training_images",
+        ".\\data\\testimages"
         target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
         batch_size=BATCH_SIZE,
         class_mode='binary',
         shuffle=True,
+        color_mode='grayscale',
+        subset="training",
         seed=42
     )
 
-    validation_data_generator = ImageDataGenerator(rescale=1./255,
-                                                   preprocessing_function=grayscale_conversion  # Apply grayscale conversion
-                                                   )
-    validation_generator = validation_data_generator.flow_from_directory(
-        ".\\data\\validation_images",
+    validation_generator = train_data_generator.flow_from_directory(
+        ".\\data\\testimages",
         target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
         batch_size=BATCH_SIZE,
         class_mode='binary',
         shuffle=True,
+        color_mode='grayscale',
+        subset="validation",
         seed=42
     )
     # Define the model architecture
     model = tf.keras.Sequential([
         tf.keras.layers.Conv2D(32, (3, 3), activation='relu',
-                               input_shape=(IMAGE_WIDTH, IMAGE_HEIGHT, 3)),
+                               input_shape=(IMAGE_WIDTH, IMAGE_HEIGHT, 1)),
+        tf.keras.layers.MaxPooling2D((2, 2)),
+        tf.keras.layers.Conv2D(32, (3, 3), activation='relu'),
         tf.keras.layers.MaxPooling2D((2, 2)),
         tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
         tf.keras.layers.MaxPooling2D((2, 2)),
-        tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
-        tf.keras.layers.MaxPooling2D((2, 2)),
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(64,activation='relu'),
+        tf.keras.layers.Dropout(0.05),
         tf.keras.layers.Dense(1, activation='sigmoid')
     ])
 
     # Compile the model
-    model.compile(optimizer='adam', loss='binary_crossentropy',
+    model.compile(optimizer="adam", loss='binary_crossentropy',
                   metrics=['accuracy'])
+    # Create a ModelCheckpoint callback to save the best model
+    checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+        'champion_model_drop_0_05.keras', 
+        monitor='val_accuracy', 
+        save_best_only=True, 
+        mode='max', 
+        verbose=1
+    )
 
-    # Train the model
+    # Train the model with the checkpoint callback
     model.fit(
         train_generator,
         steps_per_epoch=train_generator.samples // BATCH_SIZE,
         epochs=30,
         validation_data=validation_generator,
-        validation_steps=validation_generator.samples // BATCH_SIZE
+        validation_steps=validation_generator.samples // BATCH_SIZE,
+        callbacks=[checkpoint_callback]
     )
 
     return model
