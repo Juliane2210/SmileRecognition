@@ -58,59 +58,49 @@ BATCH_SIZE = 32
 
 def grayscale_conversion(img):
     # Convert the image to grayscale
+    grayscale_img = rgb2gray(img)
     # Add a color channel axis to make it compatible with the original shape
-    grayscale_img = resize(img, (IMAGE_WIDTH, IMAGE_HEIGHT))
     grayscale_img = np.expand_dims(grayscale_img, axis=-1)
     return grayscale_img
-
-# Function to preprocess the input image
-# def preprocess_image(image_path):
-#     img = image.load_img(image_path, target_size=(IMAGE_WIDTH, IMAGE_HEIGHT))
-#     img_array = image.img_to_array(img)
-#     # Expand dimensions to create batch dimension
-#     img_array = np.expand_dims(img_array, axis=0)
-#     img_array /= 255.0  # Normalize pixel values
-#     return img_array
 
 
 def createModel():
     # Set up data generators for training, validation, and testing
     train_data_generator = ImageDataGenerator(rescale=1./255,
-                                            #   preprocessing_function=grayscale_conversion,  # Apply grayscale conversion
+                                              preprocessing_function=grayscale_conversion,  # Apply grayscale conversion
                                               validation_split=0.2,
                                               )
     train_generator = train_data_generator.flow_from_directory(
-        ".\\data\\testimages"
+        ".\\data\\training_images",
         target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
         batch_size=BATCH_SIZE,
         class_mode='binary',
         shuffle=True,
-        color_mode='grayscale',
         subset="training",
         seed=42
     )
 
     validation_generator = train_data_generator.flow_from_directory(
-        ".\\data\\testimages",
+        ".\\data\\training_images",
         target_size=(IMAGE_WIDTH, IMAGE_HEIGHT),
         batch_size=BATCH_SIZE,
         class_mode='binary',
         shuffle=True,
-        color_mode='grayscale',
+
         subset="validation",
         seed=42
     )
     # Define the model architecture
     model = tf.keras.Sequential([
         tf.keras.layers.Conv2D(32, (3, 3), activation='relu',
-                               input_shape=(IMAGE_WIDTH, IMAGE_HEIGHT, 1)),
-        tf.keras.layers.MaxPooling2D((2, 2)),
-        tf.keras.layers.Conv2D(32, (3, 3), activation='relu'),
+                               input_shape=(IMAGE_WIDTH, IMAGE_HEIGHT, 3)),
         tf.keras.layers.MaxPooling2D((2, 2)),
         tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
         tf.keras.layers.MaxPooling2D((2, 2)),
+        tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D((2, 2)),
         tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(64,activation='relu'),
+        tf.keras.layers.Dense(128, activation='relu'),
         tf.keras.layers.Dropout(0.05),
         tf.keras.layers.Dense(1, activation='sigmoid')
     ])
@@ -120,10 +110,10 @@ def createModel():
                   metrics=['accuracy'])
     # Create a ModelCheckpoint callback to save the best model
     checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-        'champion_model_drop_0_05.keras', 
-        monitor='val_accuracy', 
-        save_best_only=True, 
-        mode='max', 
+        'champion_model_drop_0_05.keras',
+        monitor='val_accuracy',
+        save_best_only=True,
+        mode='max',
         verbose=1
     )
 

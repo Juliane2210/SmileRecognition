@@ -7,7 +7,7 @@ from tensorflow.keras.models import load_model
 from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score, roc_auc_score, roc_curve
 
 from sklearn.metrics import precision_score, recall_score, confusion_matrix, classification_report
-from transformers import AutoTokenizer 
+from transformers import AutoTokenizer
 import numpy as np
 from tensorflow.keras.preprocessing.image import img_to_array, load_img
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -176,11 +176,6 @@ def savePredictions(to_predict_generator):
             # Split the file path into directory and filename with extension
             directory, filename_with_extension = os.path.split(
                 original_file_path)
-            # Split the filename with extension into filename and extension
-            originalFile, file_extension = os.path.splitext(
-                filename_with_extension)
-
-            filename = f"image_{originalFile}.jpg"
 
             class_indices = to_predict_generator.class_indices
             subfolder = "neutral"
@@ -189,7 +184,7 @@ def savePredictions(to_predict_generator):
             # subfolder = y_pred[j]
             # Save the image to the output directory
             image_path = os.path.join(
-                output_file_path + subfolder + "\\", filename)
+                output_file_path + subfolder + "\\", filename_with_extension)
             # Convert back to uint8 before saving
             Image.fromarray((image * 255).astype(np.uint8)).save(image_path)
         # Stop iteration after processing all batches
@@ -204,14 +199,14 @@ if __name__ == "__main__":
     # Check if the file path argument is provided
     if len(sys.argv) != 2:
         print("Usage: python predict.py <file_path>")
-        file_path = ".\\data/testing_images"
+        file_path = ".\\data\\testing_images"
         # sys.exit(1)
     else:
         # Extract file path from command-line arguments
         file_path = sys.argv[1]
 
     # Load the model
-    model = load_model(".\\champion_model.keras")
+    model = load_model(".\\champion_model_drop_0_05.keras")
 
     y_true, y_pred, to_predict_generator = getPredictions(
         model, 0.6, file_path)

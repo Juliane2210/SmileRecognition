@@ -9,7 +9,7 @@ m_rootFolder = ".\\data\\SMILE PLUS Training Set\\SMILE PLUS Training Set\\"
 m_csvData = m_rootFolder + "annotations.csv"
 
 
-m_outputFolder = ".\\data\\testimages"
+m_outputFolder = ".\\data\\training_images"
 
 # Define column names for data
 m_columns = ["FILENAME", "EMOTION"]
