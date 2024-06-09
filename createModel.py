@@ -1,5 +1,5 @@
 #
-#  Juliane Bruck  - 8297746
+#  Juliane Bruck  - 
 # Qiyun Feng
 #  Assignment #2
 #
